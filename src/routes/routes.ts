@@ -145,8 +145,8 @@ class DatoRoutes {
     private editProfile = async (req: Request, res: Response) => {
 
         const userI = req.params.username;
-        const {email, password, bio} = req.body;
-        const userImage = req.file?.path
+        const { bio, password } = req.body;
+        const userImage = req.file?.path;
         await db.connectDB()
         .then(async (msg) => {
             const findUser = await Users.findOne({username: userI});
@@ -155,24 +155,39 @@ class DatoRoutes {
                 if(userImage != null) {
                     await fs.unlink(path.resolve(photo));
                 }
-                // Encrypt Password
-                const salt = await bcrypt.genSalt(10);
-                const hash = await bcrypt.hash(password, salt);
-                const updatedUser = await Users.findOneAndUpdate(
-                    {
-                        username: userI
-                    },
-                    {
-                        username: userI,
-                        email: email,
-                        password: hash,
-                        userImage: userImage,
-                        bio: bio    
-                    },
-                    { 
-                        new: true,
-                    });
-                res.status(200).json(updatedUser);
+
+                if(password === null) {
+                    const updatedUser = await Users.findOneAndUpdate(
+                        {
+                            username: userI
+                        },
+                        {
+                            userImage: userImage,
+                            bio: bio
+    
+                        },
+                        { 
+                            new: true,
+                        });
+                    res.status(200).json(updatedUser);
+                } else {
+                    // Encrypt Password
+                    const salt = await bcrypt.genSalt(10);
+                    const hash = await bcrypt.hash(password, salt);
+                    const updatedUser = await Users.findOneAndUpdate(
+                        {
+                            username: userI
+                        },
+                        {
+                            userImage: userImage,
+                            bio: bio,
+                            password: hash   
+                        },
+                        { 
+                            new: true,
+                        });
+                    res.status(200).json(updatedUser);
+                }
 
             } else {
                 return res.status(404).json('No user found');
@@ -188,6 +203,29 @@ class DatoRoutes {
         await db.disconnectDB();
     }
 
+    /*private editPassword = async (req: Request, res: Response) => {
+
+        const userI = req.params.username;
+        const { password } = req.body;
+        await db.connectDB()
+        .then(async (msg) => {
+            const findUser = await Users.findOne({username: userI});
+            if(findUser != null) {
+                
+
+            } else {
+                return res.status(404).json('No user found');
+            }
+            await db.disconnectDB();
+
+        })
+        .catch((msg) => {
+
+            res.send(msg);
+
+        })
+        await db.disconnectDB();
+    }*/
 
     // Profile Info Function
     private profile = async (req: Request, res: Response) => {
@@ -536,7 +574,6 @@ class DatoRoutes {
                 } else {
                     res.status(404).json('Couldnt be liked');
                 }
-
             } else {
                 return res.status(404).json('No user found');
             }
@@ -582,7 +619,7 @@ class DatoRoutes {
         this._router.post('/comment', this.Comments),
         this._router.get('/postComments/:postID', this.postComments),
         this._router.delete('/deleteComment/:_id', this.deleteComment),
-        this._router.put('/likeComment/:user/:_id', this.likeComment)
+        this._router.put('/likeComment/:username/:_id', this.likeComment)
     }
 
 }

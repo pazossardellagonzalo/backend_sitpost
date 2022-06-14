@@ -163,7 +163,7 @@ class DatoRoutes {
         this.editProfile = (req, res) => __awaiter(this, void 0, void 0, function* () {
             var _c;
             const userI = req.params.username;
-            const { email, password, bio } = req.body;
+            const { bio, password } = req.body;
             const userImage = (_c = req.file) === null || _c === void 0 ? void 0 : _c.path;
             yield database_1.db.connectDB()
                 .then((msg) => __awaiter(this, void 0, void 0, function* () {
@@ -173,21 +173,32 @@ class DatoRoutes {
                     if (userImage != null) {
                         yield fs_extra_1.default.unlink(path_1.default.resolve(photo));
                     }
-                    // Encrypt Password
-                    const salt = yield bcrypt.genSalt(10);
-                    const hash = yield bcrypt.hash(password, salt);
-                    const updatedUser = yield users_1.Users.findOneAndUpdate({
-                        username: userI
-                    }, {
-                        username: userI,
-                        email: email,
-                        password: hash,
-                        userImage: userImage,
-                        bio: bio
-                    }, {
-                        new: true,
-                    });
-                    res.status(200).json(updatedUser);
+                    if (password === null) {
+                        const updatedUser = yield users_1.Users.findOneAndUpdate({
+                            username: userI
+                        }, {
+                            userImage: userImage,
+                            bio: bio
+                        }, {
+                            new: true,
+                        });
+                        res.status(200).json(updatedUser);
+                    }
+                    else {
+                        // Encrypt Password
+                        const salt = yield bcrypt.genSalt(10);
+                        const hash = yield bcrypt.hash(password, salt);
+                        const updatedUser = yield users_1.Users.findOneAndUpdate({
+                            username: userI
+                        }, {
+                            userImage: userImage,
+                            bio: bio,
+                            password: hash
+                        }, {
+                            new: true,
+                        });
+                        res.status(200).json(updatedUser);
+                    }
                 }
                 else {
                     return res.status(404).json('No user found');
@@ -199,6 +210,29 @@ class DatoRoutes {
             });
             yield database_1.db.disconnectDB();
         });
+        /*private editPassword = async (req: Request, res: Response) => {
+    
+            const userI = req.params.username;
+            const { password } = req.body;
+            await db.connectDB()
+            .then(async (msg) => {
+                const findUser = await Users.findOne({username: userI});
+                if(findUser != null) {
+                    
+    
+                } else {
+                    return res.status(404).json('No user found');
+                }
+                await db.disconnectDB();
+    
+            })
+            .catch((msg) => {
+    
+                res.send(msg);
+    
+            })
+            await db.disconnectDB();
+        }*/
         // Profile Info Function
         this.profile = (req, res) => __awaiter(this, void 0, void 0, function* () {
             const username = req.params.username;
@@ -534,7 +568,7 @@ class DatoRoutes {
             this._router.post('/comment', this.Comments),
             this._router.get('/postComments/:postID', this.postComments),
             this._router.delete('/deleteComment/:_id', this.deleteComment),
-            this._router.put('/likeComment/:user/:_id', this.likeComment);
+            this._router.put('/likeComment/:username/:_id', this.likeComment);
     }
 }
 const obj = new DatoRoutes();
